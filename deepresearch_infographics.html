@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>大田区発 究極のサウナ聖地巡礼ガイド インフォグラフィック</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&display=swap" rel="stylesheet">
+  <!-- Chosen Palette: Brilliant Blues (#00A6FB, #0582CA, #006494, #003554, #051923) -->
+  <!-- Application Structure Plan: The infographic follows a narrative journey: 1. Hero section to hook the user. 2. A "Sauna Matrix" bubble chart as the central data visualization, immediately showing the relationship between heat, cold, and price. This is the most crucial data for the target audience. 3. Thematic sections ("Totonoi Champions," "Heat Seekers," etc.) using a card-based layout to present curated recommendations based on user goals, which is more user-friendly than a simple geographic listing. 4. Ranked bar charts to provide a clear comparison of the two most important single metrics (sauna and water temp). This structure tells a story and guides the user from a high-level overview to specific, actionable recommendations. -->
+  <!-- Visualization & Content Choices: 
+        - Sauna/Water Temp/Price -> Goal: Relationships/Compare -> Viz: Bubble Chart -> Justification: Shows the correlation between three key quantitative variables in one intuitive graphic. Library: Chart.js/Canvas.
+        - Thematic Recommendations -> Goal: Organize/Inform -> Viz: Styled Cards -> Justification: Highly scannable, responsive, and allows for mixing stats, text, and icons effectively. Method: HTML/Tailwind CSS.
+        - Sauna Temp Ranking -> Goal: Compare/Rank -> Viz: Ordered Horizontal Bar Chart -> Justification: The clearest way to show a ranked comparison of a single metric. Method: Chart.js/Canvas.
+        - Water Temp Ranking -> Goal: Compare/Rank -> Viz: Ordered Horizontal Bar Chart -> Justification: Same as above, vital for sauna enthusiasts. Method: Chart.js/Canvas.
+        - Key Features -> Goal: Inform -> Viz: Unicode Icons on Cards (🔥💧♨️) -> Justification: Quick, language-independent visual cues. Method: HTML/Tailwind CSS.
+    -->
+  <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+  <style>
+    body {
+      font-family: 'Noto Sans JP', sans-serif;
+      background-color: #051923;
+      /* Darkest Blue from Palette */
+      color: #F8F9FA;
+    }
+
+    .chart-container {
+      position: relative;
+      width: 100%;
+      max-width: 800px;
+      margin-left: auto;
+      margin-right: auto;
+      height: 450px;
+      max-height: 70vh;
+    }
+
+    @media (min-width: 768px) {
+      .chart-container {
+        height: 550px;
+      }
+    }
+
+    .stat-card {
+      background-color: #003554;
+      /* Dark Blue from Palette */
+      border: 1px solid #0582CA;
+    }
+
+    .text-accent {
+      color: #00A6FB;
+      /* Brightest Blue from Palette */
+    }
+
+    .text-heat {
+      color: #FF6B6B;
+    }
+
+    .text-cold {
+      color: #4DBEEE;
+    }
+
+    .section-title {
+      border-bottom: 2px solid #0582CA;
+    }
+
+    h1,
+    h2,
+    h3 {
+      font-weight: 900;
+    }
+  </style>
+</head>
+
+<body class="antialiased">
+
+  <div class="container mx-auto p-4 md:p-8">
+
+    <header class="text-center my-12 md:my-16">
+      <h1 class="text-4xl md:text-6xl font-black mb-4">大田区発、<span class="text-accent">究極のサウナ聖地</span>巡礼</h1>
+      <p class="max-w-3xl mx-auto text-lg text-gray-300">
+        東京の交差点「大田区」を起点に、最高の「ととのい」体験を求めて。サウナの温度、水風呂の冷たさ、そして至福の外気浴。データが解き明かす、首都圏サウナの頂点へご案内します。
+      </p>
+    </header>
+
+    <section class="my-16 md:my-24">
+      <div class="text-center mb-8">
+        <h2 class="text-3xl md:text-4xl font-bold inline-block px-6 pb-2 section-title">サウナ・マトリクス</h2>
+        <p class="max-w-2xl mx-auto mt-4 text-gray-400">
+          全施設の「サウナ温度」と「水風呂温度」を一覧比較。バブルの大きさは料金帯を示します。右上に位置するほど「高温・低温」の王道セッティングです。
+        </p>
+      </div>
+      <div class="bg-[#003554] p-4 md:p-6 rounded-xl shadow-2xl">
+        <div class="chart-container">
+          <canvas id="saunaMatrixChart"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <section class="my-16 md:my-24">
+      <div class="text-center mb-12">
+        <h2 class="text-3xl md:text-4xl font-bold inline-block px-6 pb-2 section-title">目的別ベストサウナ</h2>
+        <p class="max-w-2xl mx-auto mt-4 text-gray-400">
+          今日の気分は？あなたの目的に合わせて、究極の一軒を専門家が推薦します。
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div class="bg-white/10 p-6 rounded-lg shadow-lg">
+          <h3 class="text-2xl font-bold text-accent mb-4">👑 最高の「ととのい」を求めるあなたへ</h3>
+          <p class="text-gray-300 mb-6">サウナ、水風呂、外気浴。三要素が最高水準で揃う、まさにサウナの殿堂。一度は訪れるべき聖地です。</p>
+          <div class="space-y-4">
+            <div class="stat-card p-4 rounded-lg">
+              <p class="font-bold text-lg">一押し：朝日湯源泉ゆいる</p>
+              <p class="text-sm text-gray-400">潜水可能な関東最深の水風呂は唯一無二の体験。</p>
+            </div>
+            <div class="stat-card p-4 rounded-lg">
+              <p class="font-bold text-lg">次点：品川サウナ</p>
+              <p class="text-sm text-gray-400">3種のサウナと3種の水風呂。現代サウナの理想形。</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white/10 p-6 rounded-lg shadow-lg">
+          <h3 class="text-2xl font-bold text-accent mb-4">🔥 とにかく熱いサウナで汗を流したいあなたへ</h3>
+          <p class="text-gray-300 mb-6">並大抵の熱さでは物足りない、生粋のサウナーへ。灼熱空間があなたを待っています。</p>
+          <div class="space-y-4">
+            <div class="stat-card p-4 rounded-lg">
+              <p class="font-bold text-lg">一押し：大森湯（ヤバ森）</p>
+              <p class="text-sm text-gray-400">110℃超が常。その熱さは、まさに挑戦。</p>
+            </div>
+            <div class="stat-card p-4 rounded-lg">
+              <p class="font-bold text-lg">次点：レックスイン川崎</p>
+              <p class="text-sm text-gray-400">名物「氷ロウリュ」がもたらす強烈な熱波。</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white/10 p-6 rounded-lg shadow-lg">
+          <h3 class="text-2xl font-bold text-accent mb-4">🛀 一日中、心ゆくまで癒されたいあなたへ</h3>
+          <p class="text-gray-300 mb-6">サウナだけじゃない。漫画、食事、休憩スペース。時間を忘れて過ごせる、究極のリラクゼーション空間です。</p>
+          <div class="space-y-4">
+            <div class="stat-card p-4 rounded-lg">
+              <p class="font-bold text-lg">一押し：天然温泉 平和島</p>
+              <p class="text-sm text-gray-400">1万冊の漫画と広大なラウンジ。一日では足りない。</p>
+            </div>
+            <div class="stat-card p-4 rounded-lg">
+              <p class="font-bold text-lg">次点：おふろの王様 大井町店</p>
+              <p class="text-sm text-gray-400">エンタメ性抜群のロウリュウショーが魅力。</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white/10 p-6 rounded-lg shadow-lg">
+          <h3 class="text-2xl font-bold text-accent mb-4">💰 最高のコストパフォーマンスを求めるあなたへ</h3>
+          <p class="text-gray-300 mb-6">安かろう悪かろう、は過去の話。銭湯価格で本格的なサウナと温泉を楽しめる、驚きの価値を持つ施設です。</p>
+          <div class="space-y-4">
+            <div class="stat-card p-4 rounded-lg">
+              <p class="font-bold text-lg">一押し：大森湯</p>
+              <p class="text-sm text-gray-400">わずかな追加料金で都内屈指の高温サウナを体験。</p>
+            </div>
+            <div class="stat-card p-4 rounded-lg">
+              <p class="font-bold text-lg">次点：黒湯の温泉 ゆ～シティー蒲田</p>
+              <p class="text-sm text-gray-400">本物の黒湯温泉とサウナが銭湯価格で楽しめる。</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="my-16 md:my-24">
+      <div class="text-center mb-12">
+        <h2 class="text-3xl md:text-4xl font-bold inline-block px-6 pb-2 section-title">データで見るサウナランキング</h2>
+        <p class="max-w-2xl mx-auto mt-4 text-gray-400">
+          サウナーが最も重視する「サウナ温度」と「水風呂温度」。各施設のスペックをランキング形式で可視化しました。
+        </p>
+      </div>
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-12">
+        <div>
+          <h3 class="text-2xl font-bold text-center mb-4 text-heat">サウナ温度ランキング (高温順)</h3>
+          <div class="bg-[#003554] p-4 md:p-6 rounded-xl shadow-2xl">
+            <div class="chart-container h-[400px] md:h-[500px]">
+              <canvas id="saunaTempChart"></canvas>
+            </div>
+          </div>
+        </div>
+        <div>
+          <h3 class="text-2xl font-bold text-center mb-4 text-cold">水風呂温度ランキング (低温順)</h3>
+          <div class="bg-[#003554] p-4 md:p-6 rounded-xl shadow-2xl">
+            <div class="chart-container h-[400px] md:h-[500px]">
+              <canvas id="waterTempChart"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <script>
+    const saunaData = [
+      { name: '大森湯 (ヤバ森)', area: '大田区', price: 800, sauna_temp: 112.5, water_temp: 17.5 },
+      { name: 'ガーデンサウナ蒲田', area: '大田区', price: 1500, sauna_temp: 100, water_temp: 16 },
+      { name: 'レックスイン川崎', area: '川崎市', price: 1400, sauna_temp: 100, water_temp: 15.3 },
+      { name: '幸の湯', area: '大田区', price: 750, sauna_temp: 100, water_temp: 27 },
+      { name: '天然温泉 平和島', area: '大田区', price: 2400, sauna_temp: 98, water_temp: 16.5 },
+      { name: '朝日湯源泉ゆいる', area: '川崎市', price: 2130, sauna_temp: 96, water_temp: 13.6 },
+      { name: '黒湯の温泉 ゆ～シティー蒲田', area: '大田区', price: 800, sauna_temp: 90, water_temp: 17 },
+      { name: 'おふろの王様 大井町店', area: '品川区', price: 1500, sauna_temp: 90, water_temp: 15 },
+      { name: '武蔵小山温泉 清水湯', area: '品川区', price: 970, sauna_temp: 90, water_temp: 20 },
+      { name: '溝口温泉 喜楽里', area: '川崎市', price: 1030, sauna_temp: 88, water_temp: 19 },
+      { name: '品川サウナ', area: '品川区', price: 1800, sauna_temp: 85, water_temp: 8.5 }
+    ];
+
+    const wrapLabel = (str, maxLen = 16) => {
+      if (str.length <= maxLen) return str;
+      const words = str.split(' ');
+      const lines = [];
+      let currentLine = '';
+      for (const word of words) {
+        if ((currentLine + word).length > maxLen) {
+          lines.push(currentLine.trim());
+          currentLine = '';
+        }
+        currentLine += word + ' ';
+      }
+      lines.push(currentLine.trim());
+      return lines.filter(line => line.length > 0);
+    };
+
+    const chartTooltipOptions = {
+      plugins: {
+        tooltip: {
+          callbacks: {
+            title: function (tooltipItems) {
+              const item = tooltipItems[0];
+              let label = item.chart.data.labels[item.dataIndex];
+              if (Array.isArray(label)) {
+                return label.join(' ');
+              }
+              return label;
+            }
+          }
+        }
+      }
+    };
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const defaultFontColor = '#F8F9FA';
+      Chart.defaults.color = defaultFontColor;
+      Chart.defaults.borderColor = 'rgba(248, 249, 250, 0.2)';
+
+      // Sauna Matrix Bubble Chart
+      const ctxMatrix = document.getElementById('saunaMatrixChart').getContext('2d');
+      new Chart(ctxMatrix, {
+        type: 'bubble',
+        data: {
+          datasets: saunaData.map(s => ({
+            label: s.name,
+            data: [{
+              x: s.sauna_temp,
+              y: s.water_temp,
+              r: Math.max(s.price / 120, 8)
+            }],
+            backgroundColor: `hsla(${180 + s.water_temp * 5}, 80%, 60%, 0.7)`,
+            borderColor: `hsla(${180 + s.water_temp * 5}, 80%, 60%, 1)`,
+          }))
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            x: {
+              title: { display: true, text: 'サウナ温度 (℃)', font: { size: 14 } },
+              min: 80,
+              max: 120,
+            },
+            y: {
+              title: { display: true, text: '水風呂温度 (℃)', font: { size: 14 } },
+              reverse: true,
+              min: 5,
+              max: 30
+            }
+          },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: function (context) {
+                  const d = context.chart.data.datasets[context.datasetIndex];
+                  const dataPoint = d.data[0];
+                  const sauna = saunaData.find(s => s.name === d.label);
+                  return `${d.label}: ${dataPoint.x}℃ / ${dataPoint.y}℃ / ¥${sauna.price}`;
+                }
+              }
+            }
+          }
+        }
+      });
+
+      // Sauna Temp Bar Chart
+      const sortedBySauna = [...saunaData].sort((a, b) => b.sauna_temp - a.sauna_temp);
+      const ctxSauna = document.getElementById('saunaTempChart').getContext('2d');
+      new Chart(ctxSauna, {
+        type: 'bar',
+        data: {
+          labels: sortedBySauna.map(s => wrapLabel(s.name)),
+          datasets: [{
+            label: 'サウナ温度',
+            data: sortedBySauna.map(s => s.sauna_temp),
+            backgroundColor: sortedBySauna.map(s => `rgba(255, 107, 107, ${0.4 + (s.sauna_temp - 85) / 35})`),
+            borderColor: '#FF6B6B',
+            borderWidth: 2
+          }]
+        },
+        options: {
+          ...chartTooltipOptions,
+          indexAxis: 'y',
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: { x: { beginAtZero: false, min: 80, title: { display: true, text: '温度 (℃)' } } },
+          plugins: { legend: { display: false } }
+        }
+      });
+
+      // Water Temp Bar Chart
+      const sortedByWater = [...saunaData].sort((a, b) => a.water_temp - b.water_temp);
+      const ctxWater = document.getElementById('waterTempChart').getContext('2d');
+      new Chart(ctxWater, {
+        type: 'bar',
+        data: {
+          labels: sortedByWater.map(s => wrapLabel(s.name)),
+          datasets: [{
+            label: '水風呂温度',
+            data: sortedByWater.map(s => s.water_temp),
+            backgroundColor: sortedByWater.map(s => `rgba(77, 190, 238, ${1 - (s.water_temp - 8) / 20})`),
+            borderColor: '#4DBEEE',
+            borderWidth: 2
+          }]
+        },
+        options: {
+          ...chartTooltipOptions,
+          indexAxis: 'y',
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: { x: { beginAtZero: false, min: 5, title: { display: true, text: '温度 (℃)' } } },
+          plugins: { legend: { display: false } }
+        }
+      });
+    });
+  </script>
+</body>
+
+</html>

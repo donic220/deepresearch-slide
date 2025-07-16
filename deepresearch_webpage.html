@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>大田区発 おすすめサウナ・ファインダー</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
+  <!-- Chosen Palette: Warm Neutrals & Serene Blue -->
+  <!-- Application Structure Plan: A user-centric, interactive dashboard called "Sauna Concierge". The core is a filtering system based on user priorities (e.g., "Ultimate Totonoi", "Relax All Day") which dynamically updates a grid of sauna information cards. Clicking a card reveals a detailed side panel, avoiding page reloads. A secondary section provides interactive charts for visual comparison of key metrics like sauna and water temperatures. This task-oriented structure transforms passive reading into an active discovery tool, making it far more usable and engaging than a linear report. -->
+  <!-- Visualization & Content Choices: 
+        - Facility List -> Goal: Organize/Filter -> Viz: Interactive Cards -> Interaction: Click filters to update card grid. Justification: Most direct way for users to find what they want. Method: JS filtering logic.
+        - Sauna Temp, Water Temp, Price -> Goal: Compare/Relationships -> Viz: Interactive Scatter Plot -> Interaction: Hover for tooltips, click to highlight. Justification: At-a-glance comparison of key metrics. Library: Chart.js.
+        - Key Features (Onsen, etc.) -> Goal: Inform/Compare -> Viz: Icons/Tags on cards -> Interaction: Can be used for filtering. Justification: Quick visual cues. Method: Unicode characters with Tailwind styling.
+        - Detailed Descriptions -> Goal: Inform -> Viz: Off-canvas side panel -> Interaction: Click card to open. Justification: Keeps main view clean, provides details on demand. Method: JS to control visibility. 
+        - Full Summary Table -> Goal: Organize -> Viz: Sortable HTML table -> Justification: For data-oriented users. Method: JS for sorting. -->
+  <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+  <style>
+    body {
+      font-family: 'Noto Sans JP', sans-serif;
+      background-color: #f8f9fa;
+    }
+
+    .chart-container {
+      position: relative;
+      width: 100%;
+      max-width: 800px;
+      margin-left: auto;
+      margin-right: auto;
+      height: 400px;
+      max-height: 60vh;
+    }
+
+    @media (min-width: 768px) {
+      .chart-container {
+        height: 500px;
+      }
+    }
+
+    #details-panel {
+      transition: transform 0.3s ease-in-out;
+      transform: translateX(100%);
+      box-shadow: -10px 0 20px -10px rgba(0, 0, 0, 0.1);
+    }
+
+    #details-panel.is-visible {
+      transform: translateX(0);
+    }
+
+    .priority-btn.active {
+      background-color: #3b82f6;
+      color: white;
+      border-color: #3b82f6;
+    }
+
+    .tag {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+  </style>
+</head>
+
+<body class="bg-slate-50 text-gray-800">
+
+  <div id="app-container">
+    <header class="bg-white shadow-sm sticky top-0 z-20">
+      <div class="container mx-auto px-4 py-4">
+        <h1 class="text-2xl md:text-3xl font-bold text-center text-gray-700">
+          <span class="text-blue-500">大田区発</span> 究極のサウナ・コンシェルジュ
+        </h1>
+        <p class="text-center text-gray-500 mt-1 text-sm md:text-base">あなたの気分にぴったりの「ととのい」を見つけよう</p>
+      </div>
+    </header>
+
+    <main class="container mx-auto p-4 md:p-8">
+      <section id="concierge" class="mb-12">
+        <div class="bg-white p-6 rounded-xl shadow-lg">
+          <h2 class="text-xl font-bold mb-4 text-center text-gray-700">今日の気分は？</h2>
+          <p class="text-center text-gray-600 mb-6">あなたの目的に合わせて、おすすめのサウナを絞り込みます。</p>
+          <div id="priority-filters" class="flex flex-wrap justify-center gap-2 md:gap-4">
+          </div>
+        </div>
+      </section>
+
+      <section id="results" class="mb-12">
+        <div id="sauna-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        </div>
+      </section>
+
+      <section id="comparison" class="mb-12">
+        <div class="bg-white p-4 md:p-6 rounded-xl shadow-lg">
+          <h2 class="text-xl font-bold mb-2 text-center text-gray-700">サウナ性能比較チャート</h2>
+          <p class="text-center text-gray-600 mb-6">サウナ温度と水風呂温度の関係性をビジュアルで比較。バブルの大きさは料金帯を表します。</p>
+          <div class="chart-container">
+            <canvas id="saunaChart"></canvas>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="details-panel" class="fixed top-0 right-0 w-full md:w-1/2 lg:w-1/3 h-full bg-white z-50 overflow-y-auto">
+    <div id="details-content" class="p-6">
+    </div>
+    <button id="close-panel-btn"
+      class="absolute top-4 right-4 text-gray-500 hover:text-gray-800 text-3xl">&times;</button>
+  </div>
+  <div id="details-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden"></div>
+
+  <script>
+    const saunaData = [
+      { id: 1, name: '天然温泉 平和島', area: '大田区', access: '大森駅からバス約10分', price: 2400, sauna_temp: 98, water_temp: 16.5, rouryu: true, gaikiyoku: '△', onsen: '◎', features: '24時間営業、1万冊の漫画、空港送迎', recommendation: '一日癒されたい', description: 'リゾートスタイルのスパ施設。24時間営業で、サウナはもちろん、1万冊を超える漫画、複数のレストラン、岩盤浴、広大な休憩ラウンジと、一日では遊びきれないほどの設備が揃う。羽田空港への送迎バス付きプランも旅行者に人気。', details: { sauna: '高温サウナとストーンサウナの2種。スタッフによるロウリュウ（アウフグース）が人気（要予約）。', water: '約16.5℃。本格的な外気浴スペースはないが、クーリングルームでクールダウン可能。', onsen_type: '塩化物泉。泉質の良い天然温泉と高濃度炭酸泉も完備。', amenity: '1万冊以上の漫画、電源完備のリラックスラウンジ、レストラン、岩盤浴エリア。' } },
+      { id: 2, name: '黒湯の温泉 ゆ～シティー蒲田', area: '大田区', access: '蒲田駅から徒歩約5分', price: 800, sauna_temp: 90, water_temp: 17, rouryu: false, gaikiyoku: '〇', onsen: '◎', features: '都内トップクラスの黒湯、サ飯', recommendation: 'コスパ最高', description: '古き良き健康センターの趣。都内屈指の濃さを誇る黒湯温泉が自慢。本格的な黒湯とサウナ、活気あふれるコミュニティ空間が銭湯価格で楽しめる驚異的なコストパフォーマンスを誇る施設。', details: { sauna: '遠赤外線式で85～95℃。黒湯の保温効果を考慮したマイルドな設定。', water: '16～18℃。バイブラ付きでしっかり冷たい。', onsen_type: '黒湯。地下120mから汲み上げる本物の温泉。', amenity: '舞台付きの広大な湯上がりスペース「YCKホール」ではカラオケや絶品のサ飯が楽しめる。' } },
+      { id: 3, name: 'ガーデンサウナ蒲田', area: '大田区', access: '蒲田駅から徒歩約2分', price: 1500, sauna_temp: 110, water_temp: 16, rouryu: true, gaikiyoku: '×', onsen: '×', features: '24時間営業、2種のサウナ＆水風呂', recommendation: '熱いサウナ', description: '男性専用。24時間いつでも最高のサウナ体験を求めることができる。100℃超の高温サウナとセルフロウリュ可能なサウナ、そして2種類の水風呂を完備。比較的空いている穴場的存在。', details: { sauna: '100℃超の伝統的ドライサウナと、90℃のセルフロウリュ可能なサウナの2種。', water: '約16℃と約29℃の2種類。上級者が好む「冷冷交代浴」も可能。', onsen_type: 'なし', amenity: '観葉植物が配置された内気浴スペースが充実。カプセルホテル併設。' } },
+      { id: 4, name: '大森湯 (ヤバ森)', area: '大田区', access: '大森町駅から徒歩約3分', price: 800, sauna_temp: 115, water_temp: 18, rouryu: false, gaikiyoku: '×', onsen: '〇', features: '都内屈指の激熱サウナ', recommendation: '熱いサウナ', description: 'サウナーから畏敬の念を込めて「ヤバ森」と呼ばれる銭湯。常に110℃を超え、日によっては115℃に達する強烈なサウナが特徴。究極の熱さを求める者にとっての巡礼地。', details: { sauna: '遠赤外線式で常に110℃超。ストーブ上のヤカンからの蒸気で湿度が加わり、肌を刺すような熱さ。', water: '約15-20℃。バイブラ付き。', onsen_type: 'トルマリン風呂', amenity: '昔ながらの銭湯の風情。サウナ料金はわずか250円追加。' } },
+      { id: 5, name: '品川サウナ', area: '品川区', access: '大井町駅から徒歩約1分', price: 1800, sauna_temp: 85, water_temp: 8.5, rouryu: true, gaikiyoku: '◎', onsen: '〇', features: '3種のサウナと3種の水風呂、最新鋭', recommendation: '最高の「ととのい」', description: '2024年オープンの現代サウナの理想郷。サウナーの夢を全て詰め込んだかのような設備が魅力。アウフグースサウナ、瞑想サウナ、そしてシングルを含む3種類の水風呂を完備。屋上外気浴も完璧。', details: { sauna: '大型アウフグースサウナ「KUU」と、お茶セルフロウリュの瞑想サウナ「ZEN」の2種。', water: '水深140cmの18℃、8～9℃の「シングル」、30℃の「不感」の3種類。', onsen_type: '屋上に露天風呂あり。', amenity: 'プラネタリウムのような内気浴スペース、ジャグジー付きの壺湯も完備。泊まれるサウナ。' } },
+      { id: 6, name: 'おふろの王様 大井町店', area: '品川区', access: '大井町駅から徒歩約3分', price: 1500, sauna_temp: 90, water_temp: 15, rouryu: true, gaikiyoku: '〇', onsen: '〇', features: 'プロジェクションマッピングロウリュ', recommendation: '一日癒されたい', description: 'エンターテイメント性の高いスーパー銭湯。プロジェクションマッピングを駆使したダイナミックなロウリュウショーが名物。多彩な浴槽やレストランも充実し、一日中楽しめる。', details: { sauna: 'ロウリュウショーが楽しめる「炎の間」と漢方塩蒸し風呂がある。', water: '約15℃。', onsen_type: '人工温泉。高濃度炭酸泉など浴槽が多彩。', amenity: '駅直結の阪急大井町ガーデン内にありアクセス至便。人気のため週末は混雑注意。' } },
+      { id: 7, name: '武蔵小山温泉 清水湯', area: '品川区', access: '武蔵小山駅から徒歩約5分', price: 970, sauna_temp: 90, water_temp: 20, rouryu: false, gaikiyoku: '〇', onsen: '◎', features: '2種の源泉、黒湯水風呂', recommendation: '日本の風情', description: '東京の銭湯文化の頂点に立つ名湯。「黒湯」と「黄金の湯」という2種類の奇跡的な天然温泉が湧き出る。ミネラル豊富な黒湯の温泉水で体を冷やす「黒湯水風呂」は、他では味わえない究極の贅沢。', details: { sauna: '90℃前後の遠赤外線式。', water: '約20℃。ミネラル豊富な黒湯の水風呂。バイブラ有。', onsen_type: '美肌の湯「黒湯」と療養泉認定の「黄金の湯」の2種。', amenity: '露天スペースに外気浴用の椅子も完備。銭湯の枠を超えた満足感。' } },
+      { id: 8, name: '朝日湯源泉ゆいる', area: '川崎市', access: '川崎駅からバスまたは電車乗換', price: 2130, sauna_temp: 96, water_temp: 13.6, rouryu: true, gaikiyoku: '◎', onsen: '◎', features: '関東最強サウナ＆水風呂、アウフグース', recommendation: '最高の「ととのい」', description: 'サウナ好きから「関東最強」と名高い殿堂。サウナ、水風呂、外気浴の三要素がすべて最高水準。関東最深を誇る潜水可能な水風呂は唯一無二の体験。名だたる熱波師によるアウフグースが連日開催される。', details: { sauna: '高温サウナとアウフグース特化サウナの2種。富士の溶岩石を使用。', water: '約13.6℃。関東最深の水深150cm（男性用）で潜水可能。井戸水かけ流し。', onsen_type: '琥珀色の良質な天然温泉と強炭酸泉。', amenity: '小学生未満入館不可の大人向け空間。半露天の休憩スペースが充実。' } },
+      { id: 9, name: 'レックスイン川崎', area: '川崎市', access: '川崎駅から徒歩約5分', price: 1400, sauna_temp: 100, water_temp: 15.3, rouryu: true, gaikiyoku: '〇', onsen: '〇', features: '名物「氷ロウリュ」、駅近', recommendation: '熱いサウナ', description: '男性専用。都市型サウナの理想形。100℃超の高温高湿サウナと、名物の「氷ロウリュ」がもたらす強烈な熱体験が魅力。駅からのアクセスも抜群で、仕事帰りのリフレッシュに最適。', details: { sauna: '100℃超の本格派。30分ごとのオートロウリュに加え、巨大な氷塊を乗せる「氷ロウリュ」が名物。', water: '約15.3℃。サウナとの相性抜群。', onsen_type: '露天風呂あり。', amenity: '緑に囲まれた露天外気浴スペースには37℃の不感湯も設置。' } },
+      { id: 10, name: '溝口温泉 喜楽里', area: '川崎市', access: '武蔵溝ノ口駅からバス', price: 1030, sauna_temp: 88, water_temp: 19, rouryu: false, gaikiyoku: '〇', onsen: '◎', features: '大人の隠れ家、静かな環境', recommendation: '日本の風情', description: '小学生以下の入館を制限し、「大人のための空間」を徹底した温泉施設。日常から切り離された穏やかな時間が流れる。喧騒を離れ、ただひたすらに癒しを求める日に訪れたい上質な隠れ家。', details: { sauna: 'タワー型のドライサウナ（約88℃）と、人気のよもぎ塩スチームサウナの2種類。', water: '約19℃。やや小さいとの声もある。', onsen_type: '泉質に定評のある天然温泉と高濃度炭酸泉。', amenity: 'フリータイム制で手頃な価格の岩盤浴が人気。露天風呂周りの休憩椅子での外気浴は格別。' } },
+    ];
+
+    const priorityFilters = [
+      { key: 'all', label: 'すべて表示' },
+      { key: '最高の「ととのい」', label: '👑 最高の「ととのい」' },
+      { key: '一日癒されたい', label: '🛀 一日癒されたい' },
+      { key: '日本の風情', label: '🌸 日本の風情' },
+      { key: 'コスパ最高', label: '💰 コスパ最高' },
+      { key: '熱いサウナ', label: '🔥 熱いサウナ' },
+    ];
+
+    let saunaChart = null;
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const saunaGrid = document.getElementById('sauna-grid');
+      const priorityFiltersContainer = document.getElementById('priority-filters');
+      const detailsPanel = document.getElementById('details-panel');
+      const detailsOverlay = document.getElementById('details-overlay');
+      const closePanelBtn = document.getElementById('close-panel-btn');
+
+      function renderPriorityFilters() {
+        priorityFiltersContainer.innerHTML = priorityFilters.map(filter => `
+                <button data-filter="${filter.key}" class="priority-btn ${filter.key === 'all' ? 'active' : ''} px-4 py-2 border rounded-full text-sm font-semibold transition-colors duration-200 ease-in-out hover:bg-blue-500 hover:text-white border-gray-300">
+                    ${filter.label}
+                </button>
+            `).join('');
+      }
+
+      function renderSaunaCards(data) {
+        saunaGrid.innerHTML = data.map(sauna => `
+                <div class="sauna-card bg-white rounded-xl shadow-md overflow-hidden transform hover:-translate-y-1 transition-all duration-300 ease-in-out cursor-pointer" data-id="${sauna.id}">
+                    <div class="p-6">
+                        <div class="flex justify-between items-start">
+                             <p class="text-xs text-blue-500 font-bold">${sauna.area}</p>
+                             <div class="text-right">
+                                <span class="tag bg-blue-100 text-blue-800">¥${sauna.price.toLocaleString()}~</span>
+                             </div>
+                        </div>
+                        <h3 class="font-bold text-xl mt-1 mb-2">${sauna.name}</h3>
+                        <p class="text-gray-600 text-sm mb-4 h-10">${sauna.description.substring(0, 45)}...</p>
+                        <div class="flex justify-between items-center text-sm mb-4">
+                            <div class="text-center">
+                                <p class="font-bold text-red-500 text-lg">${sauna.sauna_temp}℃</p>
+                                <p class="text-xs text-gray-500">サウナ</p>
+                            </div>
+                             <div class="text-center">
+                                <p class="font-bold text-blue-500 text-lg">${sauna.water_temp}℃</p>
+                                <p class="text-xs text-gray-500">水風呂</p>
+                            </div>
+                            <div class="text-center">
+                                <p class="font-bold text-green-500 text-lg">${sauna.gaikiyoku}</p>
+                                <p class="text-xs text-gray-500">外気浴</p>
+                            </div>
+                        </div>
+                        <div class="flex flex-wrap gap-2 text-xs">
+                           ${sauna.rouryu ? '<span class="tag bg-orange-100 text-orange-800">ロウリュ有</span>' : ''}
+                           ${sauna.onsen === '◎' ? '<span class="tag bg-yellow-100 text-yellow-800">天然温泉</span>' : ''}
+                           ${sauna.onsen === '〇' ? '<span class="tag bg-yellow-100 text-yellow-800">温泉有</span>' : ''}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+      }
+
+      function updateChart(data) {
+        const chartData = {
+          datasets: [{
+            label: 'サウナ',
+            data: data.map(s => ({ x: s.sauna_temp, y: s.water_temp, r: Math.max(s.price / 100, 5), name: s.name })),
+            backgroundColor: 'rgba(59, 130, 246, 0.6)',
+            borderColor: 'rgba(59, 130, 246, 1)',
+          }]
+        };
+
+        if (saunaChart) {
+          saunaChart.data = chartData;
+          saunaChart.update();
+        } else {
+          const ctx = document.getElementById('saunaChart').getContext('2d');
+          saunaChart = new Chart(ctx, {
+            type: 'bubble',
+            data: chartData,
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: {
+                  display: false
+                },
+                tooltip: {
+                  callbacks: {
+                    label: function (context) {
+                      const d = context.raw;
+                      return `${d.name}: サウナ ${d.x}℃ / 水風呂 ${d.y}℃`;
+                    }
+                  }
+                }
+              },
+              scales: {
+                x: {
+                  title: {
+                    display: true,
+                    text: 'サウナ温度 (℃)'
+                  }
+                },
+                y: {
+                  title: {
+                    display: true,
+                    text: '水風呂温度 (℃)'
+                  },
+                  reverse: true
+                }
+              }
+            }
+          });
+        }
+      }
+
+      function showDetails(id) {
+        const sauna = saunaData.find(s => s.id == id);
+        if (!sauna) return;
+
+        const detailsContent = document.getElementById('details-content');
+        detailsContent.innerHTML = `
+                <p class="text-sm font-bold text-blue-500">${sauna.area}</p>
+                <h2 class="text-3xl font-bold mt-1 mb-4">${sauna.name}</h2>
+                <p class="text-gray-600 mb-6">${sauna.description}</p>
+
+                <div class="grid grid-cols-2 gap-4 text-center mb-6 border-y py-4">
+                    <div>
+                        <p class="text-xs text-gray-500">サウナ温度</p>
+                        <p class="text-2xl font-bold text-red-500">${sauna.sauna_temp}℃</p>
+                    </div>
+                    <div>
+                        <p class="text-xs text-gray-500">水風呂温度</p>
+                        <p class="text-2xl font-bold text-blue-500">${sauna.water_temp}℃</p>
+                    </div>
+                    <div>
+                        <p class="text-xs text-gray-500">料金目安</p>
+                        <p class="text-2xl font-bold">¥${sauna.price.toLocaleString()}</p>
+                    </div>
+                    <div>
+                        <p class="text-xs text-gray-500">外気浴</p>
+                        <p class="text-2xl font-bold text-green-500">${sauna.gaikiyoku}</p>
+                    </div>
+                </div>
+
+                <div class="space-y-4 text-sm">
+                    <div>
+                        <h4 class="font-bold mb-1">🔥 サウナ</h4>
+                        <p class="text-gray-700">${sauna.details.sauna}</p>
+                    </div>
+                     <div>
+                        <h4 class="font-bold mb-1">💧 水風呂</h4>
+                        <p class="text-gray-700">${sauna.details.water}</p>
+                    </div>
+                     <div>
+                        <h4 class="font-bold mb-1">♨️ 温泉</h4>
+                        <p class="text-gray-700">${sauna.details.onsen_type}</p>
+                    </div>
+                     <div>
+                        <h4 class="font-bold mb-1">🛋️ アメニティ・その他</h4>
+                        <p class="text-gray-700">${sauna.details.amenity}</p>
+                    </div>
+                     <div>
+                        <h4 class="font-bold mb-1">📍 アクセス</h4>
+                        <p class="text-gray-700">${sauna.access}</p>
+                    </div>
+                </div>
+            `;
+
+        detailsPanel.classList.add('is-visible');
+        detailsOverlay.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+      }
+
+      function hideDetails() {
+        detailsPanel.classList.remove('is-visible');
+        detailsOverlay.classList.add('hidden');
+        document.body.style.overflow = '';
+      }
+
+      function filterAndRender(filterKey) {
+        const filteredData = filterKey === 'all'
+          ? saunaData
+          : saunaData.filter(s => s.recommendation === filterKey);
+
+        renderSaunaCards(filteredData);
+        updateChart(filteredData);
+
+        document.querySelectorAll('.priority-btn').forEach(btn => {
+          btn.classList.toggle('active', btn.dataset.filter === filterKey);
+        });
+      }
+
+      priorityFiltersContainer.addEventListener('click', (e) => {
+        if (e.target.matches('.priority-btn')) {
+          const filterKey = e.target.dataset.filter;
+          filterAndRender(filterKey);
+        }
+      });
+
+      saunaGrid.addEventListener('click', (e) => {
+        const card = e.target.closest('.sauna-card');
+        if (card) {
+          showDetails(card.dataset.id);
+        }
+      });
+
+      closePanelBtn.addEventListener('click', hideDetails);
+      detailsOverlay.addEventListener('click', hideDetails);
+
+      renderPriorityFilters();
+      filterAndRender('all');
+    });
+  </script>
+</body>
+
+</html>

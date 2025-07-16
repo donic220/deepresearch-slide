@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LT資料：Gemini Deep Research活用術</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans JP', sans-serif;
+            background-color: #f0f2f5;
+        }
+        .slide {
+            display: none;
+        }
+        .slide.active {
+            display: block;
+        }
+        .slide-container {
+            width: 100%;
+            max-width: 1024px;
+            height: 576px;
+            aspect-ratio: 16 / 9;
+            transition: all 0.3s ease;
+        }
+        
+        .slide-container.fullscreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            max-width: none;
+            z-index: 999;
+            background-color: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .slide-container.fullscreen .slide-content {
+            width: 90vw;
+            height: 90vh;
+            max-width: none;
+            max-height: none;
+        }
+        .slide-content {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 48px;
+            background-color: white;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+        }
+        .nav-button {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background-color: rgba(0, 0, 0, 0.3);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 48px;
+            height: 48px;
+            font-size: 24px;
+            cursor: pointer;
+            z-index: 10;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .nav-button:hover {
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+        .prev { left: 16px; }
+        .next { right: 16px; }
+        .progress-bar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 8px;
+            background-color: #3b82f6;
+            transition: width 0.3s ease;
+        }
+        
+        /* モーダルウィンドウのスタイル */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+        
+        .modal-content {
+            background-color: #fefefe;
+            margin: 2% auto;
+            padding: 0;
+            border: none;
+            width: 95%;
+            height: 90%;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .modal-header {
+            background-color: #f8f9fa;
+            padding: 15px 20px;
+            border-bottom: 1px solid #dee2e6;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .modal-tabs {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .modal-tab {
+            padding: 8px 16px;
+            background-color: #e9ecef;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.2s;
+        }
+        
+        .modal-tab.active {
+            background-color: #007bff;
+            color: white;
+        }
+        
+        .modal-tab:hover {
+            background-color: #6c757d;
+            color: white;
+        }
+        
+        .modal-body {
+            height: calc(100% - 70px);
+            overflow: auto;
+        }
+        
+        .modal-iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        
+        .modal-document {
+            padding: 20px;
+            line-height: 1.6;
+            font-size: 14px;
+        }
+        
+        .close {
+            color: #aaa;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            line-height: 1;
+        }
+        
+        .close:hover,
+        .close:focus {
+            color: #000;
+        }
+    </style>
+</head>
+<body class="flex justify-center items-center min-h-screen">
+
+    <div class="slide-container relative">
+        <!-- Slide 1: Title -->
+        <div id="slide-1" class="slide active">
+            <div class="slide-content text-center bg-slate-900 text-white">
+                <div class="mb-4 text-lg font-bold bg-blue-500 text-white px-4 py-1 rounded-full inline-block">AI活用LT</div>
+                <h1 class="text-6xl font-black leading-tight"><span class="text-4xl">"ググる"のその先へ：</span><br/><span class="text-blue-400">Deep Research</span>で実現する効率的リサーチ術</h1>
+                <p class="mt-8 text-2xl text-slate-300">〜サウナ探しで実力検証♨️〜</p>
+                <p class="absolute bottom-12 text-xl text-slate-400">プロダクト開発部 広告主システム開発課 成島 大貴</p>
+            </div>
+        </div>
+
+        <!-- Slide 2: The Problem -->
+        <div id="slide-2" class="slide">
+            <div class="slide-content">
+                <h2 class="text-5xl font-bold text-center mb-12">最高のサウナ、どう探す？<br/>Web検索の「あるある」</h2>
+                <div class="grid grid-cols-2 gap-8 text-xl w-full">
+                    <div class="bg-slate-100 p-6 rounded-lg">🤔 広告やまとめサイトが多くて、本当に良い情報が埋もれがち…</div>
+                    <div class="bg-slate-100 p-6 rounded-lg">😩 「関東のおすすめ」は広すぎて、自宅からだと微妙に遠い…</div>
+                    <div class="bg-slate-100 p-6 rounded-lg">😵‍💫 複数の口コミサイトやブログを見比べるのが、とにかく面倒！</div>
+                    <div class="bg-slate-100 p-6 rounded-lg">🤫 地元民が知る「隠れた名店」みたいな場所が見つけにくい…</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 3: The Solution -->
+        <div id="slide-3" class="slide">
+            <div class="slide-content">
+                <h2 class="text-5xl font-bold text-center mb-8">そこで <span class="text-blue-500">Deep Research</span> の出番です！</h2>
+                 <div class="w-full bg-slate-800 text-white p-4 rounded-lg font-mono text-lg mb-8">
+                    <span class="text-green-400">&gt;</span> 東京都大田区からアクセスの良い、おすすめのサウナ
+                </div>
+                <p class="text-center text-xl mb-4">この一文で、こんなアウトプットが！</p>
+                <div class="grid grid-cols-5 gap-4 w-full h-64">
+                    <div class="bg-slate-100 p-4 rounded-lg flex flex-col items-center justify-center text-center cursor-pointer hover:bg-slate-200 transition-colors duration-200" onclick="openDetailReport()">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-600"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                        <h3 class="font-bold mt-2 text-lg">詳細レポート</h3>
+                        <p class="text-sm text-slate-600">目的別の推薦リストや比較表まで網羅！</p>
+                        <p class="text-xs text-blue-600 mt-1">クリックして開く</p>
+                    </div>
+                    <div class="bg-slate-100 p-4 rounded-lg flex flex-col items-center justify-center text-center cursor-pointer hover:bg-slate-200 transition-colors duration-200" onclick="openWebsite()">
+                         <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-green-600"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
+                        <h3 class="font-bold mt-2 text-lg">Webサイト</h3>
+                        <p class="text-sm text-slate-600">絞り込み機能付きのインタラクティブなページ！</p>
+                        <p class="text-xs text-green-600 mt-1">クリックして開く</p>
+                    </div>
+                    <div class="bg-slate-100 p-4 rounded-lg flex flex-col items-center justify-center text-center cursor-pointer hover:bg-slate-200 transition-colors duration-200" onclick="openInfographic()">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-purple-600"><path d="M12 20v-6M12 8V2M4.93 4.93l4.24 4.24M14.83 14.83l4.24 4.24M2 12h6M16 12h6M4.93 19.07l4.24-4.24M14.83 9.17l4.24-4.24"></path></svg>
+                        <h3 class="font-bold mt-2 text-lg">インフォグラフィック</h3>
+                        <p class="text-sm text-slate-600">データをグラフで可視化！一目でわかる！</p>
+                        <p class="text-xs text-purple-600 mt-1">クリックして開く</p>
+                    </div>
+                    <div class="bg-slate-100 p-4 rounded-lg flex flex-col items-center justify-center text-center cursor-pointer hover:bg-slate-200 transition-colors duration-200" onclick="openAudioSummary()">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-orange-600"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="22"></line><line x1="8" y1="22" x2="16" y2="22"></line></svg>
+                        <h3 class="font-bold mt-2 text-lg">音声概要</h3>
+                        <p class="text-sm text-slate-600">調査結果を音声で聞ける！移動中にも最適！</p>
+                        <p class="text-xs text-orange-600 mt-1">クリックして再生</p>
+                    </div>
+                    <div class="bg-slate-100 p-4 rounded-lg flex flex-col items-center justify-center text-center cursor-pointer hover:bg-slate-200 transition-colors duration-200" onclick="openBlogPost()">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-red-600"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><line x1="12" y1="9" x2="8" y2="9"></line></svg>
+                        <h3 class="font-bold mt-2 text-lg">自分の好きな形式で</h3>
+                        <p class="text-sm text-slate-600">例：ブログ記事</p>
+                        <p class="text-xs text-red-600 mt-1">クリックして開く</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Slide 4: How to Use -->
+        <div id="slide-4" class="slide">
+            <div class="slide-content p-0">
+                <img src="deepresearch_howto.png" alt="Deep Researchの使い方" class="w-full h-full object-contain">
+            </div>
+        </div>
+
+        <!-- Slide 5: Output Formats -->
+        <div id="slide-5" class="slide">
+            <div class="slide-content p-0">
+                <img src="deepresearch_output_formats.png" alt="アウトプット形式の選択" class="w-full h-full object-contain">
+            </div>
+        </div>
+
+        <!-- Slide 6: Key Points -->
+        <div id="slide-6" class="slide">
+             <div class="slide-content">
+                <h2 class="text-5xl font-bold text-center mb-12">Web検索と何が違う？<br/>Deep Researchのすごい所</h2>
+                <div class="text-2xl space-y-8 w-full">
+                    <div class="flex items-start">
+                        <span class="text-3xl mr-4">🎯</span>
+                        <div><strong class="text-blue-600">Point 1: 圧倒的な時間短縮と情報収集力</strong><br/>
+                        <span class="text-xl text-slate-700">人がやれば数時間かかるような調査でもわずか数分で、大量の情報からまとめてくれる！</span></div>
+                    </div>
+                     <div class="flex items-start">
+                        <span class="text-3xl mr-4">🗺️</span>
+                        <div><strong class="text-blue-600">Point 2: 文脈を理解した「絞り込み」</strong><br/>
+                        <span class="text-xl text-slate-700">「大田区からアクセスが良い」という意図を汲んで、隣接する品川区や川崎市のサウナまで提案。これが賢い！</span></div>
+                    </div>
+                    <div class="flex items-start">
+                        <span class="text-3xl mr-4">🎨</span>
+                        <div><strong class="text-blue-600">Point 3: 目的に合わせた多様なアウトプット</strong><br/>
+                        <span class="text-xl text-slate-700">Webサイト、インフォグラフィック、音声、ブログ記事など、用途に応じて最適な形式で情報を提供。一度の調査で複数の活用方法が可能！</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 7: Conclusion -->
+        <div id="slide-7" class="slide">
+            <div class="slide-content text-center">
+                <h2 class="text-5xl font-bold mb-8">さあ、Deep Researchを使ってみよう！</h2>
+                <p class="text-2xl mb-10">趣味の調べ物からビジネスでの利用まで可能性は無限大です！<br/>面倒な情報収集はAIに任せて、私たちはもっと創造的な作業に集中しましょう。</p>
+                <div class="flex items-center justify-center bg-slate-100 p-6 rounded-lg w-full">
+                    <img src="https://img.youtube.com/vi/9xMdGGK2Nc0/0.jpg" alt="YouTube Thumbnail" class="w-48 h-auto rounded-lg mr-6">
+                    <div>
+                        <h3 class="text-xl font-bold text-left">もっと知りたい方へ</h3>
+                        <p class="text-left">参考にした動画です。仕事で活用したい場合はこちらが分かりやすい！</p>
+                        <a href="https://www.youtube.com/watch?v=9xMdGGK2Nc0" target="_blank" class="text-blue-600 hover:underline">https://www.youtube.com/watch?v=9xMdGGK2Nc0</a>
+                    </div>
+                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=https://www.youtube.com/watch?v=9xMdGGK2Nc0" alt="QR Code" class="ml-6">
+                </div>
+                 <p class="mt-12 text-3xl font-bold">ご清聴ありがとうございました！</p>
+            </div>
+        </div>
+
+        <!-- Navigation -->
+        <button id="prev-btn" class="nav-button prev">&lt;</button>
+        <button id="next-btn" class="nav-button next">&gt;</button>
+        <button id="fullscreen-btn" class="nav-button" style="top: 16px; right: 16px; transform: none;">⛶</button>
+        
+        <!-- Progress Bar -->
+        <div class="progress-bar-container w-full bg-gray-300 h-2 absolute bottom-0 left-0 rounded-b-lg overflow-hidden">
+            <div id="progress-bar" class="progress-bar"></div>
+        </div>
+    </div>
+
+    <!-- モーダルウィンドウ -->
+    <div id="contentModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-tabs">
+                    <button class="modal-tab active" onclick="switchTab('webpage')">Webサイト</button>
+                    <button class="modal-tab" onclick="switchTab('infographic')">インフォグラフィック</button>
+                    <button class="modal-tab" onclick="switchTab('audio')">音声概要</button>
+                </div>
+                <span class="close" onclick="closeModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                 <div id="webpage-content" class="modal-content-section" style="display: block;">
+                     <h3 class="text-2xl font-bold mb-6">Deep Research Webサイト</h3>
+                     <p>ここにDeep ResearchのWebサイトの内容が表示されます。</p>
+                     <p>このモーダルは、ブラウザのウィンドウサイズに応じて自動的に調整されます。</p>
+                 </div>
+                 <div id="infographic-content" class="modal-content-section" style="display: none;">
+                     <h3 class="text-2xl font-bold mb-6">Deep Research インフォグラフィック</h3>
+                     <p>ここにDeep Researchのインフォグラフィックの内容が表示されます。</p>
+                     <p>このモーダルは、ブラウザのウィンドウサイズに応じて自動的に調整されます。</p>
+                 </div>
+                <div id="audio-content" class="modal-content-section" style="display: none; padding: 40px; text-align: center;">
+                    <h3 class="text-2xl font-bold mb-6">大田区発！究極の「ととのい」体験へ：個性が光るサウナガイド</h3>
+                    <div class="bg-slate-100 p-8 rounded-lg max-w-2xl mx-auto">
+                        <div class="mb-6">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-orange-600 mx-auto mb-4"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="22"></line><line x1="8" y1="22" x2="16" y2="22"></line></svg>
+                            <p class="text-lg text-slate-700 mb-4">Deep Researchで生成された調査結果を音声で聞くことができます。</p>
+                            <p class="text-sm text-slate-600 mb-6">移動中や作業中でも、耳から情報を得られて便利です！</p>
+                        </div>
+                        <audio id="audioPlayer" controls class="w-full max-w-md mx-auto">
+                            <source src="大田区発！究極の「ととのい」体験へ：個性が光るサウナガイド.mp3" type="audio/mpeg">
+                            お使いのブラウザは音声の再生に対応していません。
+                        </audio>
+                        <div class="mt-4 text-sm text-slate-600">
+                            <p>🎧 イヤホンでの聴取をおすすめします</p>
+                            <p>⏱️ 再生時間：約5分</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const slides = document.querySelectorAll('.slide');
+        const prevBtn = document.getElementById('prev-btn');
+        const nextBtn = document.getElementById('next-btn');
+        const progressBar = document.getElementById('progress-bar');
+        let currentSlide = 0;
+        const totalSlides = slides.length;
+
+        function showSlide(index) {
+            slides.forEach((slide, i) => {
+                slide.classList.toggle('active', i === index);
+            });
+            updateNavButtons();
+            updateProgressBar();
+        }
+
+        function updateNavButtons() {
+            prevBtn.disabled = currentSlide === 0;
+            nextBtn.disabled = currentSlide === totalSlides - 1;
+            prevBtn.style.opacity = prevBtn.disabled ? '0.3' : '1';
+            nextBtn.style.opacity = nextBtn.disabled ? '0.3' : '1';
+        }
+
+        function updateProgressBar() {
+            const progressPercentage = ((currentSlide + 1) / totalSlides) * 100;
+            progressBar.style.width = `${progressPercentage}%`;
+        }
+
+        function openDetailReport() {
+            window.open('https://docs.google.com/document/d/1JsRQc51-bk6PO34DA5Us23_60qFfsVz6nhfH9ZdDZ5o/edit?tab=t.0', '_blank');
+        }
+
+        function openWebsite() {
+            window.open('deepresearch_webpage.html', '_blank');
+        }
+
+        function openInfographic() {
+            window.open('deepresearch_infographics.html', '_blank');
+        }
+
+        function openAudioSummary() {
+            openModal('audio');
+        }
+
+        function openBlogPost() {
+            window.open('deepresearch_blog.html', '_blank');
+        }
+
+        function openModal(defaultTab = 'webpage') {
+            const modal = document.getElementById('contentModal');
+            modal.style.display = 'block';
+            switchTab(defaultTab);
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('contentModal');
+            modal.style.display = 'none';
+        }
+
+        function switchTab(tabName) {
+            // すべてのタブとコンテンツを非表示
+            document.querySelectorAll('.modal-tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.modal-content-section').forEach(content => content.style.display = 'none');
+            
+            // 選択されたタブとコンテンツを表示
+            const targetTab = document.querySelector(`[onclick="switchTab('${tabName}')"]`);
+            const targetContent = document.getElementById(tabName + '-content');
+            
+            if (targetTab && targetContent) {
+                targetTab.classList.add('active');
+                targetContent.style.display = 'block';
+                
+                // 音声タブの場合、オーディオプレイヤーをリセット
+                if (tabName === 'audio') {
+                    const audioPlayer = document.getElementById('audioPlayer');
+                    if (audioPlayer) {
+                        audioPlayer.currentTime = 0;
+                    }
+                }
+            }
+        }
+
+
+
+        // モーダルの外側をクリックした時に閉じる
+        window.onclick = function(event) {
+            const modal = document.getElementById('contentModal');
+            if (event.target === modal) {
+                closeModal();
+            }
+        }
+
+        prevBtn.addEventListener('click', () => {
+            if (currentSlide > 0) {
+                currentSlide--;
+                showSlide(currentSlide);
+            }
+        });
+
+        nextBtn.addEventListener('click', () => {
+            if (currentSlide < totalSlides - 1) {
+                currentSlide++;
+                showSlide(currentSlide);
+            }
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight') {
+                nextBtn.click();
+            } else if (e.key === 'ArrowLeft') {
+                prevBtn.click();
+            } else if (e.key === 'f' || e.key === 'F') {
+                toggleFullscreen();
+            } else if (e.key === 'Escape') {
+                if (isFullscreen) {
+                    exitFullscreen();
+                }
+            }
+        });
+
+        // 全画面表示機能
+        const fullscreenBtn = document.getElementById('fullscreen-btn');
+        const slideContainer = document.querySelector('.slide-container');
+        let isFullscreen = false;
+        
+        function toggleFullscreen() {
+            if (!isFullscreen) {
+                enterFullscreen();
+            } else {
+                exitFullscreen();
+            }
+        }
+
+        function enterFullscreen() {
+            slideContainer.classList.add('fullscreen');
+            document.body.style.overflow = 'hidden';
+            isFullscreen = true;
+            updateFullscreenButton();
+        }
+
+        function exitFullscreen() {
+            slideContainer.classList.remove('fullscreen');
+            document.body.style.overflow = 'auto';
+            isFullscreen = false;
+            updateFullscreenButton();
+        }
+
+        function updateFullscreenButton() {
+            if (isFullscreen) {
+                fullscreenBtn.innerHTML = '⛶';
+                fullscreenBtn.title = '全画面表示を終了 (F または Esc)';
+            } else {
+                fullscreenBtn.innerHTML = '⛶';
+                fullscreenBtn.title = '全画面表示 (F)';
+            }
+        }
+
+        // 全画面ボタンのクリックイベント
+        fullscreenBtn.addEventListener('click', toggleFullscreen);
+
+        // 初期状態のボタン設定
+        updateFullscreenButton();
+
+        showSlide(currentSlide);
+    </script>
+</body>
+</html>
